@@ -7,71 +7,74 @@
   <style>
     body {
       margin: 0;
-      height: 100dvh;
-      overflow: hidden;
       background: #f6f3fb;
       font-family: system-ui, sans-serif;
     }
 
+    main {
+      width: min(540px, calc(100% - 32px));
+      margin: 5dvh auto 0;
+      text-align: center;
+    }
+
     h1 {
-      position: fixed;
-      z-index: 100000;
-      left: 50%;
-      bottom: calc(4dvh + var(--model-height, 65dvh) + 6px);
-      transform: translateX(-50%);
-      margin: 0;
+      display: inline-block;
+      margin: 0 0 8px;
       padding: 6px 18px;
       border: 1px solid #f2d5cb;
       border-radius: 999px;
       background: #fff1e9;
       color: #864f55;
       box-shadow: 0 3px 12px #864f551a;
-      font-size: clamp(16px, 3vw, 22px);
-      font-weight: 600;
-      white-space: nowrap;
-      pointer-events: none;
+      font-size: 18px;
     }
 
-    #live2d-widget {
-      right: auto !important;
-      left: 50% !important;
-      bottom: 4dvh !important;
-      transform: translateX(-50%);
-    }
+    #portrait { height: 72dvh; }
+    canvas { display: block; }
   </style>
 </head>
 <body>
-  <h1>小yan吃不胖</h1>
+  <main>
+    <h1>小yan吃不胖</h1>
+    <div id="portrait"></div>
+  </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/lib/L2Dwidget.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/live2d-widgets@1.0.1/dist/live2d.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism2.min.js"></script>
   <script>
-    if (window.L2Dwidget) {
-      const viewport = document.documentElement;
-      const nameHeight = document.querySelector("h1").offsetHeight;
-      const availableHeight = viewport.clientHeight - nameHeight;
-      const height = Math.max(1, Math.floor(availableHeight * 0.72));
-      const width = Math.max(
-        1,
-        Math.min(Math.floor(height * 0.64), viewport.clientWidth)
+    async function showIzumi() {
+      const portrait = document.querySelector("#portrait");
+      const app = new PIXI.Application({
+        backgroundAlpha: 0,
+        antialias: true
+      });
+
+      const model = await PIXI.live2d.Live2DModel.from(
+        "https://raw.githubusercontent.com/zenghongtu/live2d-model-assets/master/assets/moc/izumi/izumi.model.json"
       );
 
-      viewport.style.setProperty("--model-height", `${height}px`);
+      const modelWidth = model.width;
+      const modelHeight = model.height;
+      model.anchor.set(0.5);
+      app.stage.addChild(model);
+      portrait.append(app.view);
 
-      window.L2Dwidget.init({
-        model: {
-          jsonPath: "https://cdn.jsdelivr.net/npm/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json"
-        },
-        display: {
-          position: "right",
-          width,
-          height,
-          hOffset: 0,
-          vOffset: 0
-        },
-        mobile: { show: true, scale: 1 },
-        react: { opacityDefault: 1, opacityOnHover: 1 }
-      });
+      function fitModel() {
+        const width = portrait.clientWidth;
+        const height = portrait.clientHeight;
+        const scale = Math.min(width / modelWidth, height / modelHeight);
+
+        app.renderer.resize(width, height);
+        model.scale.set(scale * 0.96);
+        model.position.set(width / 2, height / 2);
+      }
+
+      fitModel();
+      new ResizeObserver(fitModel).observe(portrait);
     }
+
+    showIzumi().catch(console.error);
   </script>
 </body>
 </html>
